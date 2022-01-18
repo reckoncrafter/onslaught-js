@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@900&display=swap" rel="stylesheet"> 
+        <style>
+            body{
+                font-family: "Inconsolata";
+            }
+            canvas { background: #000; display: block; margin: 0 auto;}
+            p{
+                font-size: 16px;
+            }
+        </style>
+
+    </head>
+    <body>
+
+        <canvas id="main" width="1024" height="512"></canvas>
+
+
+        <script>
+            var canvas = document.getElementById("main");
+            var ctx = canvas.getContext("2d");
+
+            ctx.font = "16px Inconsolata";
+
+            //var COLS = 128;
+            var COLS = canvas.width / 8;
+            //var LINES = 32;
+            var LINES = canvas.height / 16;
+
+            // origin = 2, 12
+            // cell height = 16;
+            // cell width = 8;
+            function j_x(x){
+                return x*8 + 2;
+            }
+            function j_y(y){
+                return y*16 + 12;
+            }
+            function line(x1, y1, x2, y2){
+                ctx.beginPath();
+                ctx.strokeStyle = "#888888";
+                ctx.moveTo( j_x(x1), j_y(y1) );
+                ctx.lineTo( j_x(x2), j_y(y2) );
+                ctx.stroke();
+                ctx.closePath();
+            }
+            function putchar(ch, x, y){
+                ctx.fillStyle = "#00ff00"
+                ctx.fillText(ch, j_x(x), j_y(y));
+            }
+            function clear(){
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            function getRandomInt(max) {
+                return Math.floor(Math.random() * max);
+            }
+            
+            // GRID
+            for(i = 0; i < COLS; i++){
+                line(i,-1, i,LINES);
+            }
+            for(i = 0; i < LINES; i++){
+                line(0,i, COLS,i);
+            }
+            //
+
+
+
+            class Player{
+                constructor(x,y){
+                    this.pos_x = x;
+                    this.pos_y = y;
+                    this.ch = "P";
+                    this.facing_right = true;
+                }
+            }
+            
+            pl = new Player(5,5);
+
+            class Projectile{
+                constructor(){
+                    this.pos_x = pl.pos_x;
+                    this.pos_y = pl.pos_y;
+                    this.active = true;
+                    this.facing_right = pl.facing_right;
+                    this.ch = '.';
+                }
+
+                advance(){
+                    switch(this.facing_right){
+                        case true:
+                            this.pos_x += 1;
+                            break;
+                        case false:
+                            this.pos_x -= 1;
+                            break;
+                    }
+                    if(this.pos_x >= COLS || this.pos_x <= 0){
+                        this.active = false;
+                    }
+                }
+            }
+            
+            var projectiles = [];
+
+            class Enemy{
+                constructor(){
+                    this.active = true;
+                    this.ch = '!';
+
+                    var rng = getRandomInt(2);
+                    switch(rng){
+                        case 0:
+                            this.pos_x = 1;
+                            this.spawn_on_right = true;
+                            break;
+                        case 1:
+                            this.pos_x = COLS-1;
+                            this.spawn_on_right = false;
+                            break;
+                    }
+                    rng = getRandomInt(10);
+                    this.pos_y = LINES - rng; 
+                }
+
+                advance(){
+                    switch(this.spawn_on_right){
+                        case true:
+                            this.pos_x += 1;
+                            break;
+                        case false:
+                            this.pos_x -= 1;
+                            break;
+                    }
+                    if(this.pos_x >= COLS || this.pos_x <= 0){
+                        this.active = false;
+                    }
+                }
+            }
+
+            var enemies = [];
+            enemies.push(new Enemy);
+
+            window.addEventListener('keydown', action, {capture:true} );
+            function action(e){
+                switch(e.keyCode){
+                    case 37: 
+                        pl.pos_x -= 1;
+                        pl.facing_right = false;
+                        break; //Left key
+                    case 38: 
+                        pl.pos_y -= 3;
+                        break; //Up key
+                    case 39:
+                        pl.pos_x += 1;
+                        pl.facing_right = true;
+                        break; //Right key
+                    case 40: 
+
+                        break; //Down key
+                    case 32:
+                        projectiles.push(new Projectile);
+                        break; // Space
+                }
+            }
+            
+
+            interval = 0;
+
+            enemies.forEach(e => {
+                console.log(e.pos_x + ", " + e.pos_y);
+            })
+
+            function render(){
+                // Rendering
+                clear();
+
+                // FLOOR
+                for(i = 0; i < COLS; i++){
+                    putchar('#', i, LINES-1);
+                }
+
+                putchar(pl.ch, pl.pos_x, pl.pos_y);
+                if(pl.facing_right){
+                    putchar('>', pl.pos_x+1, pl.pos_y);
+                }
+                else{
+                    putchar('<', pl.pos_x-1, pl.pos_y);
+                }
+
+                projectiles.forEach(p => {
+                    putchar(p.ch, p.pos_x, p.pos_y);
+                });
+                enemies.forEach(e => {
+                    putchar(e.ch, e.pos_x, e.pos_y);
+                });
+                
+                //
+
+                // Game Loop
+                if(interval < 1024){
+                    interval++;
+                }
+                else{
+                    interval = 0;
+                }
+
+                if( (pl.pos_y != LINES-2) && (interval%18 == 0) ){
+                    pl.pos_y += 1;
+                }
+
+                projectiles.forEach(p => {
+                    p.advance();
+                });
+                enemies.forEach(e => {
+                    if(interval%4 == 0){
+                        e.advance();
+                    }
+                });
+                for(var i = 0; i < projectiles.length; i++){
+                    if(!projectiles[i].active){
+                        projectiles.splice(i, 1);
+                        //console.log("removed " + i);
+                    }
+                }
+                for(var i = 0; i < enemies.length; i++){
+                    if(!enemies[i].active){
+                        enemies.splice(i, 1);
+                        //console.log("removed " + i);
+                    }
+                }
+
+            }
+            setInterval(render, 10);
+
+
+        </script>
+
+
+    </body>
+</html>
