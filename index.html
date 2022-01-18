@@ -18,11 +18,15 @@
     <body>
 
         <canvas id="main" width="1024" height="512"></canvas>
+        <h2>SCORE: <span id="score"></span></h2>
+        <h2>FAILS: <span id="fails"></span></h2>
 
 
         <script>
             var canvas = document.getElementById("main");
             var ctx = canvas.getContext("2d");
+            var score = document.getElementById("score");
+            var fails = document.getElementById("fails");
 
             ctx.font = "16px Inconsolata";
 
@@ -82,7 +86,7 @@
                 }
             }
             
-            pl = new Player(5,5);
+            pl = new Player(COLS/2,LINES-2);
 
             class Projectile{
                 constructor(){
@@ -127,7 +131,7 @@
                             break;
                     }
                     rng = getRandomInt(10);
-                    this.pos_y = LINES - rng; 
+                    this.pos_y = LINES-1 - rng; 
                 }
 
                 advance(){
@@ -178,6 +182,9 @@
                 console.log(e.pos_x + ", " + e.pos_y);
             })
 
+            var score_count = 0;
+            var fail_count = 0;
+
             function render(){
                 // Rendering
                 clear();
@@ -212,12 +219,18 @@
                     interval = 0;
                 }
 
+                if(interval%32 == 0){
+                    enemies.push(new Enemy);
+                }
+
                 if( (pl.pos_y != LINES-2) && (interval%18 == 0) ){
                     pl.pos_y += 1;
                 }
 
                 projectiles.forEach(p => {
-                    p.advance();
+                    if(interval%2 == 0){
+                        p.advance();
+                    }
                 });
                 enemies.forEach(e => {
                     if(interval%4 == 0){
@@ -233,6 +246,7 @@
                 for(var i = 0; i < enemies.length; i++){
                     if(!enemies[i].active){
                         enemies.splice(i, 1);
+                        fail_count++;
                         //console.log("removed " + i);
                     }
                 }
@@ -242,10 +256,12 @@
                             enemies.splice(en, 1);
                             projectiles.splice(pr, 1);
                             console.log("collision!");
+                            score_count++;
                         }
                     }
                 }
-
+                score.innerHTML = score_count;
+                fails.innerHTML = fail_count;
             }
             setInterval(render, 10);
 
