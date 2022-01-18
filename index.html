@@ -34,12 +34,15 @@
             // origin = 2, 12
             // cell height = 16;
             // cell width = 8;
+
+            // Align to grid
             function j_x(x){
                 return x*8 + 2;
             }
             function j_y(y){
                 return y*16 + 12;
             }
+
             function line(x1, y1, x2, y2){
                 ctx.beginPath();
                 ctx.strokeStyle = "#888888";
@@ -231,6 +234,15 @@
                     if(!enemies[i].active){
                         enemies.splice(i, 1);
                         //console.log("removed " + i);
+                    }
+                }
+                for(var en = 0; en < enemies.length; en++){
+                    for(var pr = 0; pr < projectiles.length; pr++){
+                        if(Math.abs(enemies[en].pos_x - projectiles[pr].pos_x < 2) && enemies[en].pos_y == projectiles[pr].pos_y){
+                            enemies.splice(en, 1);
+                            projectiles.splice(pr, 1);
+                            console.log("collision!");
+                        }
                     }
                 }
 
